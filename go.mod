@@ -1,4 +1,4 @@
-module git.nonamestudio.me/gjs/engine
+module engine
 
 go 1.16
 
