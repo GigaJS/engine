@@ -3,8 +3,8 @@ package core
 import (
 	_ "embed"
 	"fmt"
+	globals2 "git.nonamestudio.me/gjs/gjs/core/globals"
 	"github.com/dop251/goja"
-	globals2 "gjs/core/globals"
 	"os"
 )
 
