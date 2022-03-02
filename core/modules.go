@@ -2,9 +2,9 @@ package core
 
 import (
 	"fmt"
-	gjsFs "github.com/MagicFun1241/gjs/modules/fs"
-	gjsPath "github.com/MagicFun1241/gjs/modules/path"
-	gjsUrl "github.com/MagicFun1241/gjs/modules/url"
+	gjsFs "git.nonamestudio.me/gjs/engine/modules/fs"
+	gjsPath "git.nonamestudio.me/gjs/engine/modules/path"
+	gjsUrl "git.nonamestudio.me/gjs/engine/modules/url"
 	"github.com/dop251/goja"
 	"io/ioutil"
 	"os"
