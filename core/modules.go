@@ -2,7 +2,10 @@ package core
 
 import (
 	"fmt"
+	gjsColors "git.nonamestudio.me/gjs/engine/modules/colors"
 	gjsFs "git.nonamestudio.me/gjs/engine/modules/fs"
+	gjsHttp "git.nonamestudio.me/gjs/engine/modules/http"
+	gjsMongoDb "git.nonamestudio.me/gjs/engine/modules/mongodb"
 	gjsPath "git.nonamestudio.me/gjs/engine/modules/path"
 	gjsUrl "git.nonamestudio.me/gjs/engine/modules/url"
 	"github.com/dop251/goja"
@@ -29,7 +32,7 @@ func isRelativePath(str string) bool {
 
 func moduleExists(name string) (exist, native bool, moduleLocation uint8) {
 	switch name {
-	case "fs", "url", "http", "https", "path":
+	case "fs", "url", "http", "https", "path", "colors", "mongodb":
 		return true, true, ModuleLocationNative
 	}
 
@@ -112,8 +115,14 @@ func (m *Module) Require(call goja.FunctionCall) goja.Value {
 			o = gjsFs.CreateModule(m.Runtime)
 		case "url":
 			o = gjsUrl.CreateModule(m.Runtime)
+		case "http":
+			o = gjsHttp.CreateModule(m.Runtime)
 		case "path":
 			o = gjsPath.CreateModule(m.Runtime)
+		case "colors":
+			o = gjsColors.CreateModule(m.Runtime)
+		case "mongodb":
+			o = gjsMongoDb.CreateModule(m.Runtime)
 		}
 	} else {
 		if filepath.Ext(moduleName) == "" {

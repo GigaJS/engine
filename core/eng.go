@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"git.nonamestudio.me/gjs/engine/core/globals"
+	"git.nonamestudio.me/gjs/engine/core/loop"
 	"github.com/dop251/goja"
 	"os"
 )
@@ -21,14 +22,15 @@ func CreateGJSEngine() *Engine {
 		}
 	}()
 
-	m := &Module{Runtime: vm}
+	coreModule := &Module{Runtime: vm}
+	timerModule := &loop.TimerModule{Runtime: vm}
 
-	_ = vm.Set("setTimeout", m.SetTimeout)
-	_ = vm.Set("setInterval", m.SetInterval)
-	_ = vm.Set("clearTimeout", m.ClearTimeout)
-	_ = vm.Set("clearInterval", m.ClearTimeout)
+	_ = vm.Set("setTimeout", timerModule.SetTimeout)
+	_ = vm.Set("setInterval", timerModule.SetInterval)
+	_ = vm.Set("clearTimeout", timerModule.ClearTimeout)
+	_ = vm.Set("clearInterval", timerModule.ClearTimeout)
 
-	_ = vm.Set("require", m.Require)
+	_ = vm.Set("require", coreModule.Require)
 
 	RegisterCompatibility(vm)
 
@@ -57,5 +59,5 @@ func (e Engine) ExecuteFromString(script string) {
 }
 
 func (e Engine) Start() {
-	Loop()
+	loop.Loop()
 }

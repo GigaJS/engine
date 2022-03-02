@@ -6,10 +6,36 @@ import (
 	"strings"
 )
 
+func DynamicArrayToBytes(a goja.DynamicArray) []byte {
+	r := make([]byte, a.Len())
+
+	for i := 0; i <= a.Len(); i++ {
+		item := a.Get(i)
+		r[i] = byte(item.ToInteger())
+	}
+
+	return r
+}
+
 func replaceFirst(str string, replacement byte) string {
 	out := []byte(str)
 	out[0] = replacement
 	return string(out)
+}
+
+func IsBuffer(d interface{}) bool {
+	if arr, ok := d.(goja.DynamicArray); ok {
+		for i := 0; i <= arr.Len(); i++ {
+			arrItem := arr.Get(i)
+			if arrItem.ExportType().Kind() != reflect.Int64 {
+				return false
+			}
+		}
+
+		return true
+	} else {
+		return false
+	}
 }
 
 func InterfaceToObject(vm *goja.Runtime, v interface{}) *goja.Object {
@@ -40,4 +66,24 @@ func InterfaceToObject(vm *goja.Runtime, v interface{}) *goja.Object {
 	}
 
 	return r
+}
+
+func StringOrDefault(vm *goja.Runtime, value goja.Value, def string) string {
+	if value == nil {
+		return def
+	}
+
+	return String(vm, value)
+}
+
+func String(vm *goja.Runtime, value goja.Value) string {
+	if value == nil {
+		panic(vm.ToValue("String must be string"))
+	}
+
+	if value.ExportType().Kind() == reflect.String {
+		return value.Export().(string)
+	}
+
+	panic(vm.ToValue("String must be string"))
 }

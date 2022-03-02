@@ -1,4 +1,4 @@
-package core
+package loop
 
 import (
 	"github.com/dop251/goja"
@@ -12,10 +12,13 @@ type _timer struct {
 	call     goja.FunctionCall
 }
 
-var registry = map[*_timer]*_timer{}
+var registry = make(map[*_timer]bool)
 var ready = make(chan *_timer)
 
-func (m *Module) newTimer(call goja.FunctionCall, interval bool) (*_timer, goja.Value) {
+func (m *TimerModule) newTimer(
+	call goja.FunctionCall,
+	interval bool,
+) (*_timer, goja.Value) {
 	delay := call.Argument(1).ToInteger()
 	if 0 >= delay {
 		delay = 1
@@ -26,7 +29,7 @@ func (m *Module) newTimer(call goja.FunctionCall, interval bool) (*_timer, goja.
 		call:     call,
 		interval: interval,
 	}
-	registry[timer] = timer
+	registry[timer] = false
 
 	timer.timer = time.AfterFunc(timer.duration, func() {
 		ready <- timer
@@ -36,17 +39,17 @@ func (m *Module) newTimer(call goja.FunctionCall, interval bool) (*_timer, goja.
 	return timer, value
 }
 
-func (m *Module) SetTimeout(call goja.FunctionCall) goja.Value {
+func (m *TimerModule) SetTimeout(call goja.FunctionCall) goja.Value {
 	_, value := m.newTimer(call, false)
 	return value
 }
 
-func (m *Module) SetInterval(call goja.FunctionCall) goja.Value {
+func (m *TimerModule) SetInterval(call goja.FunctionCall) goja.Value {
 	_, value := m.newTimer(call, true)
 	return value
 }
 
-func (m *Module) ClearTimeout(call goja.FunctionCall) goja.Value {
+func (m *TimerModule) ClearTimeout(call goja.FunctionCall) goja.Value {
 	timer := call.Argument(0).Export()
 	if timer, ok := timer.(*_timer); ok {
 		timer.timer.Stop()

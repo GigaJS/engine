@@ -1,11 +1,13 @@
 package globals
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/dop251/goja"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type ConsoleModule struct {
@@ -18,6 +20,10 @@ type formatOptions struct {
 }
 
 func formatValue(v goja.Value, opts formatOptions) string {
+	if v == nil || goja.IsUndefined(v) {
+		return "undefined"
+	}
+
 	if goja.IsNull(v) {
 		return "null"
 	}
@@ -39,6 +45,9 @@ func formatValue(v goja.Value, opts formatOptions) string {
 		}
 	default:
 		if _, ok := goja.AssertFunction(v); ok {
+			if opts.PropName == nil {
+				return "[Function null]"
+			}
 			return fmt.Sprintf("[Function %s]", *opts.PropName)
 		} else if o, ok := v.(*goja.Object); ok {
 			t := ""
@@ -65,6 +74,30 @@ func formatValue(v goja.Value, opts formatOptions) string {
 			if len(o.Keys()) == 0 {
 				t = "{}"
 			} else {
+
+				if IsBuffer(o) {
+					bytes := o.Get("data").Export().([]uint8)
+					lenBytes := len(bytes)
+					if lenBytes < 1 {
+						return "<Buffer>"
+					} else {
+						var str string
+						t := make([]string, 50)
+
+						for i := 0; i < 50; i++ {
+							t[i] = hex.EncodeToString([]byte{bytes[i]})
+						}
+
+						if lenBytes > 50 {
+							str = fmt.Sprintf("%s ... %d more bytes", strings.Join(t, " "), lenBytes-50)
+						} else {
+							str = strings.Join(t, " ")
+						}
+
+						return fmt.Sprintf("<Buffer %s>", str)
+					}
+				}
+
 				t += "{ "
 
 				for i, k := range o.Keys() {
