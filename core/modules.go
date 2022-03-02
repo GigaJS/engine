@@ -1,10 +1,10 @@
 package core
 
 import (
-	gjsFs "engine/modules/fs"
-	gjsPath "engine/modules/path"
-	gjsUrl "engine/modules/url"
 	"fmt"
+	gjsFs "git.nonamestudio.me/gjs/engine/modules/fs"
+	gjsPath "git.nonamestudio.me/gjs/engine/modules/path"
+	gjsUrl "git.nonamestudio.me/gjs/engine/modules/url"
 	"github.com/dop251/goja"
 	"io/ioutil"
 	"os"

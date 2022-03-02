@@ -2,8 +2,8 @@ package core
 
 import (
 	_ "embed"
-	globals2 "engine/core/globals"
 	"fmt"
+	"git.nonamestudio.me/gjs/engine/core/globals"
 	"github.com/dop251/goja"
 	"os"
 )
@@ -32,10 +32,10 @@ func CreateGJSEngine() *Engine {
 
 	RegisterCompatibility(vm)
 
-	globals2.RegisterConsole(vm)
-	globals2.RegisterBuffer(vm)
-	globals2.RegisterProcess(vm)
-	globals2.RegisterUrl(vm)
+	globals.RegisterConsole(vm)
+	globals.RegisterBuffer(vm)
+	globals.RegisterProcess(vm)
+	globals.RegisterUrl(vm)
 
 	eng := Engine{
 		vm: vm,
