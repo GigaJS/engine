@@ -7,8 +7,24 @@ const colors = require('colors')
 function info(...msgs) {
     console.log(colors.brightBlue + "info   " + colors.reset, ...msgs)
 }
+
 function err(...msgs) {
     console.log(colors.brightRed + colors.bold + "error  " + colors.reset, ...msgs)
+}
+
+function await(promise, cb) {
+    promise
+        .then((ok) => {
+            try {
+                cb(ok, null)
+            } catch (e) {
+                err("executing cb failed ", e)
+            }
+        })
+        .catch(err => {
+            console.log("Promise error ", err)
+            cb(null, err)
+        })
 }
 
 info("Listening users")
@@ -23,23 +39,28 @@ mongodb.createClient({ url: dbURL }).then(client => {
     // console.log("Error ", err)
     // })
 
-err("pizda")
+    try {
+        console.log("a ", 'f')
+        await(qwave.find({}), (res, err) => {
+            console.log("a ", 'g')
 
-    qwave.insert({ test: true, date: Date.now() }).then(id => {
-        info("Insert id: " + id)
-    })
+            info(res)
+            await(qwave.deleteMany({}), (res, err) => {
+                info("Deleted ", res)
 
-    qwave.find({ test: true }).then(results => {
-        info("Qwave resuts: ", results)
-    })
+                await(qwave.insert({ test: true, date: Date.now }), (res, err) => {
+                    info("Inserted entry with id ", res)
+                    await(qwave.findOne({ _id: mongodb.objectId(res) }), (res) => {
+                        info("Found ", res)
+                    })
+                });
+            });
+        });
+    } catch (e) {
+        console.log(e)
+    }
 
-    users.find({ role: 10 }, { limit: 1 }).then(result => {
-        console.log(result)
-    }).catch(err => {
-        console.log('Error occured ', err)
-    })
-
-
+    console.log("ff")
 }).catch(err => {
     console.log("Error")
     console.log(err)
