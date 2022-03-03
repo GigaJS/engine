@@ -35,7 +35,6 @@ func fromValue(vm *goja.Runtime, data goja.Value) interface{} {
 		return nil
 	}
 
-
 	if objData, ok := data.(*goja.Object); ok {
 
 		if isMongoDBObj(vm, objData) {
@@ -49,7 +48,6 @@ func fromValue(vm *goja.Runtime, data goja.Value) interface{} {
 		}
 		return result
 	}
-
 
 	switch data.ExportType().Kind() {
 	case reflect.Bool:

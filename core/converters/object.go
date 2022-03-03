@@ -77,8 +77,8 @@ func StringOrDefault(vm *goja.Runtime, value goja.Value, def string) string {
 }
 
 func String(vm *goja.Runtime, value goja.Value) string {
-	if value == nil {
-		panic(vm.ToValue("String must be string"))
+	if !IsPresent(vm, value) {
+		panic(vm.ToValue("String is null"))
 	}
 
 	if value.ExportType().Kind() == reflect.String {

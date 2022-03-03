@@ -1,8 +1,6 @@
 package mongodb
 
 import (
-	"fmt"
-
 	"git.nonamestudio.me/gjs/engine/core/converters"
 	"git.nonamestudio.me/gjs/engine/core/loop"
 	"github.com/dop251/goja"
@@ -76,7 +74,6 @@ func (h NativeMongoDBCollectionHandler) findOne(call goja.FunctionCall) goja.Val
 }
 
 func (h NativeMongoDBCollectionHandler) find(call goja.FunctionCall) goja.Value {
-	fmt.Println("D")
 	promise, resolve, reject := loop.NewPromise(h.runtime)
 
 	filterArgument := call.Argument(0)
@@ -104,7 +101,6 @@ func (h NativeMongoDBCollectionHandler) find(call goja.FunctionCall) goja.Value 
 		resultSet, err := h.collection.Find(ctx, filter, findOptions)
 
 		if err != nil {
-			fmt.Println("C")
 
 			reject(h.runtime.ToValue(err.Error()))
 			return
@@ -114,7 +110,6 @@ func (h NativeMongoDBCollectionHandler) find(call goja.FunctionCall) goja.Value 
 
 		err = resultSet.All(ctx, &results)
 		if err != nil {
-			fmt.Println("F")
 
 			reject(h.runtime.ToValue(err.Error()))
 			return
@@ -125,7 +120,6 @@ func (h NativeMongoDBCollectionHandler) find(call goja.FunctionCall) goja.Value 
 		for _, res := range results {
 			gjsResults = append(gjsResults, toValue(h.runtime, res))
 		}
-		fmt.Println("O")
 
 		resolve(h.runtime.ToValue(gjsResults))
 

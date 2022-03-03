@@ -40,9 +40,7 @@ mongodb.createClient({ url: dbURL }).then(client => {
     // })
 
     try {
-        console.log("a ", 'f')
         await(qwave.find({}), (res, err) => {
-            console.log("a ", 'g')
 
             info(res)
             await(qwave.deleteMany({}), (res, err) => {
@@ -50,8 +48,13 @@ mongodb.createClient({ url: dbURL }).then(client => {
 
                 await(qwave.insert({ test: true, date: Date.now }), (res, err) => {
                     info("Inserted entry with id ", res)
-                    await(qwave.findOne({ _id: mongodb.objectId(res) }), (res) => {
+                    const entryId = res
+
+                    await(qwave.findOne({_id: mongodb.objectId(res)}), (res) => {
                         info("Found ", res)
+                        await(qwave.update({_id: mongodb.objectId(entryId)}, {$set: {hui: 'zalupa'}}), (res) => {
+                            info("Update result ", res)
+                        })
                     })
                 });
             });
@@ -60,7 +63,6 @@ mongodb.createClient({ url: dbURL }).then(client => {
         console.log(e)
     }
 
-    console.log("ff")
 }).catch(err => {
     console.log("Error")
     console.log(err)

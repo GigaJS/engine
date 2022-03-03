@@ -8,31 +8,32 @@ import (
 
 var mongodbType = goja.NewSymbol("mongodb-type")
 
-func getMongoDBTag(vm *goja.Runtime, obj *goja.Object) *string {
-	var st string
+func getMongoDBTag(vm *goja.Runtime, obj *goja.Object) (bool, string) {
 
 	tag := obj.GetSymbol(mongodbType)
 
 	if converters.IsPresent(vm, tag) {
 		data := converters.String(vm, tag)
-		return &data
+		return true, data
 	}
 
-	return &st
+	return false, ""
 }
 
 func isMongoDBObj(vm *goja.Runtime, obj *goja.Object) bool {
-	return getMongoDBTag(vm, obj) != nil
+	has, _ := getMongoDBTag(vm, obj)
+	return has
 }
 
 func mongoDBObjExtract(vm *goja.Runtime, obj *goja.Object) interface{} {
-	switch *getMongoDBTag(vm, obj) {
+	_, data := getMongoDBTag(vm, obj)
+	switch data {
 	case "1":
-		 id, err := primitive.ObjectIDFromHex(converters.String(vm, obj.Get("id")))
-		 if err != nil {
-			 panic(vm.ToValue(err.Error()))
-		 }
-		 return id
+		id, err := primitive.ObjectIDFromHex(converters.String(vm, obj.Get("id")))
+		if err != nil {
+			panic(vm.ToValue(err.Error()))
+		}
+		return id
 	}
 
 	return nil
