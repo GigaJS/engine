@@ -2,12 +2,6 @@ package core
 
 import (
 	"fmt"
-	gjsColors "git.nonamestudio.me/gjs/engine/modules/colors"
-	gjsFs "git.nonamestudio.me/gjs/engine/modules/fs"
-	gjsHttp "git.nonamestudio.me/gjs/engine/modules/http"
-	gjsMongoDb "git.nonamestudio.me/gjs/engine/modules/mongodb"
-	gjsPath "git.nonamestudio.me/gjs/engine/modules/path"
-	gjsUrl "git.nonamestudio.me/gjs/engine/modules/url"
 	"github.com/dop251/goja"
 	"io/ioutil"
 	"os"
@@ -22,17 +16,17 @@ const ModuleLocationRelative = 3
 
 type Module struct {
 	Runtime *goja.Runtime
+	Engine  *Engine
 }
 
-var cachedModules = map[string]*goja.Object{}
+var cachedModules = map[string]goja.Value{}
 
 func isRelativePath(str string) bool {
 	return strings.HasPrefix(str, "./") || strings.HasPrefix(str, "../")
 }
 
-func moduleExists(name string) (exist, native bool, moduleLocation uint8) {
-	switch name {
-	case "fs", "url", "http", "https", "path", "colors", "mongodb":
+func (m Module) moduleExists(name string) (exist, native bool, moduleLocation uint8) {
+	if m.Engine.nativeModules[name] != nil {
 		return true, true, ModuleLocationNative
 	}
 
@@ -101,29 +95,18 @@ func (m *Module) Require(call goja.FunctionCall) goja.Value {
 
 	moduleName := moduleValue.String()
 
-	exist, native, _ := moduleExists(moduleName)
+	exist, native, _ := m.moduleExists(moduleName)
 	if !exist {
 		m.Runtime.Interrupt(fmt.Sprintf("Cannot find module '%s'", moduleName))
 		return goja.Undefined()
 	}
 
-	var o *goja.Object
+	var o goja.Value
 
 	if native {
-		switch moduleName {
-		case "fs":
-			o = gjsFs.CreateModule(m.Runtime)
-		case "url":
-			o = gjsUrl.CreateModule(m.Runtime)
-		case "http":
-			o = gjsHttp.CreateModule(m.Runtime)
-		case "path":
-			o = gjsPath.CreateModule(m.Runtime)
-		case "colors":
-			o = gjsColors.CreateModule(m.Runtime)
-		case "mongodb":
-			o = gjsMongoDb.CreateModule(m.Runtime)
-		}
+		nativeModuleConstructor := m.Engine.nativeModules[moduleName]
+		o = nativeModuleConstructor(m.Engine)
+
 	} else {
 		if filepath.Ext(moduleName) == "" {
 			moduleName += ".js"

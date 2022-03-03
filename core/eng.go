@@ -9,8 +9,11 @@ import (
 	"os"
 )
 
+type ModuleRegistrar func(engine *Engine) goja.Value
+
 type Engine struct {
-	vm *goja.Runtime
+	Runtime       *goja.Runtime
+	nativeModules map[string]ModuleRegistrar
 }
 
 func CreateGJSEngine() *Engine {
@@ -22,7 +25,12 @@ func CreateGJSEngine() *Engine {
 		}
 	}()
 
-	coreModule := &Module{Runtime: vm}
+	eng := Engine{
+		Runtime:       vm,
+		nativeModules: map[string]ModuleRegistrar{},
+	}
+
+	coreModule := &Module{Runtime: vm, Engine: &eng}
 	timerModule := &loop.TimerModule{Runtime: vm}
 
 	_ = vm.Set("setTimeout", timerModule.SetTimeout)
@@ -39,15 +47,11 @@ func CreateGJSEngine() *Engine {
 	globals.RegisterProcess(vm)
 	globals.RegisterUrl(vm)
 
-	eng := Engine{
-		vm: vm,
-	}
-
 	return &eng
 }
 
 func (e Engine) ExecuteFromString(script string) {
-	_, err := e.vm.RunString(script)
+	_, err := e.Runtime.RunString(script)
 	if err != nil {
 		if jse, ok := err.(*goja.Exception); ok {
 			_, _ = os.Stderr.WriteString(jse.String())
@@ -56,6 +60,10 @@ func (e Engine) ExecuteFromString(script string) {
 		}
 	}
 
+}
+
+func (e Engine) RegisterModule(module string, registerFunction ModuleRegistrar) {
+	e.nativeModules[module] = registerFunction
 }
 
 func (e Engine) Start() {

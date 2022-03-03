@@ -43,7 +43,7 @@ func (m NativeMongoDBDatabaseHandler) collection(call goja.FunctionCall) goja.Va
 	_ = object.Set("delete", handler.deleteOne)
 	_ = object.Set("deleteMany", handler.deleteMany)
 	_ = object.Set("update", handler.updateOne)
-	// _ = object.Set("updateMany", handler.deleteMany)
+	_ = object.Set("updateMany", handler.deleteMany)
 	return object
 }
 
