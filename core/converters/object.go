@@ -87,3 +87,42 @@ func String(vm *goja.Runtime, value goja.Value) string {
 
 	panic(vm.ToValue("String must be string"))
 }
+
+func NumberInt64(vm *goja.Runtime, value goja.Value) int64 {
+	if !IsPresent(vm, value) {
+		panic(vm.ToValue("Must be a number"))
+	}
+
+	switch value.ExportType().Kind() {
+	case reflect.Int, reflect.Int64:
+		return value.ToInteger()
+	case reflect.Float64, reflect.Float32:
+		return int64(value.ToFloat())
+	}
+
+	panic(vm.ToValue("Number type unsupported"))
+}
+
+func NumberInt(vm *goja.Runtime, value goja.Value) int32 {
+	if !IsPresent(vm, value) {
+		panic(vm.ToValue("Must be a number"))
+	}
+
+	switch value.ExportType().Kind() {
+	case reflect.Int, reflect.Int64:
+		return int32(value.ToInteger())
+	case reflect.Float64, reflect.Float32:
+		return int32(value.ToFloat())
+	}
+
+	panic(vm.ToValue("Number type unsupported"))
+}
+
+func IsPresent(vm *goja.Runtime, val goja.Value) bool {
+	return val != nil && !goja.IsNull(val) && !goja.IsUndefined(val) && !goja.IsNaN(val)
+}
+
+func IsPresentInObject(vm *goja.Runtime, object *goja.Object, key string) bool {
+	val := object.Get(key)
+	return val != nil && !goja.IsNull(val) && !goja.IsUndefined(val) && !goja.IsNaN(val)
+}

@@ -17,7 +17,11 @@ type ExitLock struct{}
 
 func NewPromise(vm *goja.Runtime) (*goja.Promise, func(result interface{}), func(reason interface{})) {
 	promise, resolve, reject := vm.NewPromise()
+
+	promiseMutex.Lock()
 	promises[promise] = false
+	promiseMutex.Unlock()
+
 	return promise, func(result interface{}) {
 			resolve(result)
 			promiseMutex.Lock()

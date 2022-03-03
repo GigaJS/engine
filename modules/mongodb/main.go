@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"reflect"
 )
 
 type Module struct {
@@ -34,24 +35,51 @@ type NativeMongoDBCollectionHandler struct {
 
 var ctx = context.TODO()
 
-func (h NativeMongoDBCollectionHandler) find(call goja.FunctionCall) goja.Value {
-	singleRes := h.collection.FindOne(ctx, bson.D{})
+func (h NativeMongoDBCollectionHandler) findOne(call goja.FunctionCall) goja.Value {
 
-	if singleRes.Err() != nil {
-		panic(singleRes.Err())
+	promise, resolve, reject := loop.NewPromise(h.runtime)
+
+	filterArgument := call.Argument(0)
+	optionsArgument := call.Argument(1)
+	var filter interface{}
+	findOptions := options.FindOne()
+
+	if filterArgument != nil && !goja.IsUndefined(filterArgument) && !goja.IsNull(filterArgument) {
+		filter = fromValue(h.runtime, filterArgument)
+	} else {
+		filter = bson.D{}
 	}
 
-	data := bson.M{}
-
-	err := singleRes.Decode(&data)
-	if err != nil {
-		panic(err)
+	if optionsArgument != nil && !goja.IsUndefined(optionsArgument) && !goja.IsNull(optionsArgument) {
+		optionsObject := optionsArgument.ToObject(h.runtime)
+		if converters.IsPresentInObject(h.runtime, optionsObject, "skip") {
+			skip := converters.NumberInt64(h.runtime, optionsObject.Get("skip"))
+			findOptions.Skip = &skip
+		}
 	}
 
-	//fmt.Println(data)
-	//println("OK")
+	go func() {
 
-	return toValue(h.runtime, data)
+		singleRes := h.collection.FindOne(ctx, filter, findOptions)
+
+		if singleRes.Err() != nil {
+			reject(h.runtime.ToValue(singleRes.Err().Error()))
+			return
+		}
+
+		data := bson.M{}
+
+		err := singleRes.Decode(&data)
+		if err != nil {
+			reject(h.runtime.ToValue(err.Error()))
+			return
+		}
+
+		resolve(toValue(h.runtime, data))
+
+	}()
+
+	return h.runtime.ToValue(promise)
 }
 
 func toValue(vm *goja.Runtime, data interface{}) goja.Value {
@@ -69,6 +97,33 @@ func toValue(vm *goja.Runtime, data interface{}) goja.Value {
 		return obj
 	}
 	return goja.Undefined()
+}
+
+func fromValue(vm *goja.Runtime, data goja.Value) interface{} {
+	if objData, ok := data.(*goja.Object); ok {
+		result := bson.M{}
+		for _, key := range objData.Keys() {
+			v := objData.Get(key)
+			result[key] = fromValue(vm, v)
+		}
+		return result
+	}
+
+	switch data.ExportType().Kind() {
+	case reflect.Bool:
+		return data.ToBoolean()
+	case reflect.String:
+		return data.String()
+	case reflect.Int:
+		return data.ToInteger()
+	case reflect.Int64:
+		return data.ToInteger()
+	case reflect.Float64:
+		return data.ToFloat()
+	case reflect.Float32:
+		return data.ToFloat()
+	}
+	return nil
 }
 
 func (m NativeMongoDBHandler) database(call goja.FunctionCall) goja.Value {
@@ -96,7 +151,7 @@ func (m NativeMongoDBDatabaseHandler) collection(call goja.FunctionCall) goja.Va
 	}
 
 	object := m.runtime.NewObject()
-	_ = object.Set("find", handler.find)
+	_ = object.Set("findOne", handler.findOne)
 	return object
 }
 
