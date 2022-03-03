@@ -2,14 +2,44 @@ const dbURL = "mongodb://root:jABZKj0Wrk@127.0.0.1:27017/?authSource=admin&readP
 
 const http = require('http')
 const mongodb = require('mongodb')
+const colors = require('colors')
 
-mongodb.createClient({url: dbURL}).then(client => {
-    let users = client.db("qwave").collection('users');
-    users.findOne({role: {$gt: 6, $lt: 9}}, { skip: 1 }).then(res => {
-        console.log('RES: ', res)
-    }).catch(err => {
-        console.log("Error ", err)
+function info(...msgs) {
+    console.log(colors.brightBlue + "info   " + colors.reset, ...msgs)
+}
+function err(...msgs) {
+    console.log(colors.brightRed + colors.bold + "error  " + colors.reset, ...msgs)
+}
+
+info("Listening users")
+mongodb.createClient({ url: dbURL }).then(client => {
+    info("Mongodb connection success")
+    let db = client.db("qwave");
+    let users = db.collection('users');
+    let qwave = db.collection('qwave');
+    // users.findOne({ role: { $gt: 6, $lt: 9 } }, { skip: 0 }).then(res => {
+    // console.log('RES: ', res)
+    // }).catch(err => {
+    // console.log("Error ", err)
+    // })
+
+err("pizda")
+
+    qwave.insert({ test: true, date: Date.now() }).then(id => {
+        info("Insert id: " + id)
     })
+
+    qwave.find({ test: true }).then(results => {
+        info("Qwave resuts: ", results)
+    })
+
+    users.find({ role: 10 }, { limit: 1 }).then(result => {
+        console.log(result)
+    }).catch(err => {
+        console.log('Error occured ', err)
+    })
+
+
 }).catch(err => {
     console.log("Error")
     console.log(err)

@@ -2,6 +2,8 @@ package mongodb
 
 import (
 	"context"
+	"reflect"
+
 	"git.nonamestudio.me/gjs/engine/core/converters"
 	"git.nonamestudio.me/gjs/engine/core/loop"
 	"github.com/dop251/goja"
@@ -9,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"reflect"
 )
 
 type Module struct {
@@ -35,20 +36,30 @@ type NativeMongoDBCollectionHandler struct {
 
 var ctx = context.TODO()
 
-func (h NativeMongoDBCollectionHandler) findOne(call goja.FunctionCall) goja.Value {
+func (h NativeMongoDBCollectionHandler) extractObjectToBson(filterArgument *goja.Object) interface{} {
 
-	promise, resolve, reject := loop.NewPromise(h.runtime)
-
-	filterArgument := call.Argument(0)
-	optionsArgument := call.Argument(1)
 	var filter interface{}
-	findOptions := options.FindOne()
 
 	if filterArgument != nil && !goja.IsUndefined(filterArgument) && !goja.IsNull(filterArgument) {
 		filter = fromValue(h.runtime, filterArgument)
 	} else {
 		filter = bson.D{}
 	}
+
+	return filter
+
+}
+
+func (h NativeMongoDBCollectionHandler) findOne(call goja.FunctionCall) goja.Value {
+
+	promise, resolve, reject := loop.NewPromise(h.runtime)
+
+	filterArgument := call.Argument(0)
+
+	optionsArgument := call.Argument(1)
+	findOptions := options.FindOne()
+
+	filter := h.extractObjectToBson(filterArgument.ToObject(h.runtime))
 
 	if optionsArgument != nil && !goja.IsUndefined(optionsArgument) && !goja.IsNull(optionsArgument) {
 		optionsObject := optionsArgument.ToObject(h.runtime)
@@ -82,24 +93,106 @@ func (h NativeMongoDBCollectionHandler) findOne(call goja.FunctionCall) goja.Val
 	return h.runtime.ToValue(promise)
 }
 
+func (h NativeMongoDBCollectionHandler) find(call goja.FunctionCall) goja.Value {
+
+	promise, resolve, reject := loop.NewPromise(h.runtime)
+
+	filterArgument := call.Argument(0)
+
+	optionsArgument := call.Argument(1)
+	findOptions := options.Find()
+
+	filter := h.extractObjectToBson(filterArgument.ToObject(h.runtime))
+
+	if optionsArgument != nil && !goja.IsUndefined(optionsArgument) && !goja.IsNull(optionsArgument) {
+		optionsObject := optionsArgument.ToObject(h.runtime)
+
+		if converters.IsPresentInObject(h.runtime, optionsObject, "skip") {
+			skip := converters.NumberInt64(h.runtime, optionsObject.Get("skip"))
+			findOptions.Skip = &skip
+		}
+		if converters.IsPresentInObject(h.runtime, optionsObject, "limit") {
+			limit := converters.NumberInt64(h.runtime, optionsObject.Get("limit"))
+			findOptions.Limit = &limit
+		}
+	}
+
+	go func() {
+
+		resultSet, err := h.collection.Find(ctx, filter, findOptions)
+
+		if err != nil {
+			reject(h.runtime.ToValue(err.Error()))
+			return
+		}
+
+		var results []bson.M
+
+		err = resultSet.All(ctx, &results)
+		if err != nil {
+			reject(h.runtime.ToValue(err.Error()))
+			return
+		}
+
+		var gjsResults []goja.Value
+
+		for _, res := range results {
+			gjsResults = append(gjsResults, toValue(h.runtime, res))
+		}
+
+		resolve(h.runtime.ToValue(gjsResults))
+
+	}()
+
+	return h.runtime.ToValue(promise)
+}
+
+func (h NativeMongoDBCollectionHandler) insert(call goja.FunctionCall) goja.Value {
+
+	promise, resolve, reject := loop.NewPromise(h.runtime)
+	entityObject := call.Argument(0)
+	entity := h.extractObjectToBson(entityObject.ToObject(h.runtime))
+
+	go func() {
+
+		insertResult, err := h.collection.InsertOne(ctx, entity)
+
+		if err != nil {
+			reject(h.runtime.ToValue(err.Error()))
+			return
+		}
+
+		id := insertResult.InsertedID
+
+		resolve(toValue(h.runtime, id))
+
+	}()
+
+	return h.runtime.ToValue(promise)
+}
+
 func toValue(vm *goja.Runtime, data interface{}) goja.Value {
+	// TODO: Array support
 	if val, ok := data.(bson.M); ok {
 		obj := vm.NewObject()
 
 		for key, value := range val {
-			if objectId, ok := value.(primitive.ObjectID); ok {
-				_ = obj.Set(key, objectId.Hex())
-			} else {
-				_ = obj.Set(key, vm.ToValue(value))
-			}
+			_ = obj.Set(key, toValue(vm, value))
 		}
 
 		return obj
 	}
-	return goja.Undefined()
+
+	if objectId, ok := data.(primitive.ObjectID); ok {
+		return vm.ToValue(objectId.Hex())
+	}
+
+	return vm.ToValue(data)
 }
 
 func fromValue(vm *goja.Runtime, data goja.Value) interface{} {
+	// TODO: Array support
+
 	if objData, ok := data.(*goja.Object); ok {
 		result := bson.M{}
 		for _, key := range objData.Keys() {
@@ -152,6 +245,8 @@ func (m NativeMongoDBDatabaseHandler) collection(call goja.FunctionCall) goja.Va
 
 	object := m.runtime.NewObject()
 	_ = object.Set("findOne", handler.findOne)
+	_ = object.Set("find", handler.find)
+	_ = object.Set("insert", handler.insert)
 	return object
 }
 

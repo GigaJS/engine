@@ -3,6 +3,7 @@ package globals
 import (
 	"github.com/dop251/goja"
 	"os"
+	"strings"
 )
 
 type ProcessModule struct {
@@ -20,7 +21,7 @@ func (p *ProcessModule) cwd() goja.Value {
 }
 
 func (p *ProcessModule) env() goja.Value {
-	r := vm.NewObject()
+	r := p.runtime.NewObject()
 
 	for _, e := range os.Environ() {
         pair := strings.SplitN(e, "=", 2)
