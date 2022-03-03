@@ -3,6 +3,7 @@ package globals
 import (
 	"encoding/hex"
 	"fmt"
+	"git.nonamestudio.me/gjs/engine/core/converters"
 	"github.com/dop251/goja"
 	"os"
 	"reflect"
@@ -71,8 +72,24 @@ func formatValue(v goja.Value, opts formatOptions) string {
 				return t
 			}
 
+			if err, ok := v.Export().(error); ok {
+				return fmt.Sprintf("Error: %s", err.Error())
+			}
+
 			if len(o.Keys()) == 0 {
-				t = "{}"
+
+				if converters.IsPresentInObject(o, "message") {
+
+					message := o.Get("message").String()
+					name := o.Get("name").String()
+					stack := o.Get("stack").String()
+
+					strings.IndexRune(stack, '\n')
+
+					t = fmt.Sprintf("%s: %s\n%s", name, message, stack)
+				} else {
+					t = "{}"
+				}
 			} else {
 
 				if IsBuffer(o) {

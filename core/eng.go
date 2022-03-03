@@ -38,7 +38,7 @@ func CreateGJSEngine() *Engine {
 	_ = vm.Set("clearTimeout", timerModule.ClearTimeout)
 	_ = vm.Set("clearInterval", timerModule.ClearTimeout)
 
-	_ = vm.Set("require", coreModule.Require)
+	_ = vm.Set("requireNativeModule", coreModule.Require)
 
 	RegisterCompatibility(vm)
 

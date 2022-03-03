@@ -77,7 +77,7 @@ func StringOrDefault(vm *goja.Runtime, value goja.Value, def string) string {
 }
 
 func String(vm *goja.Runtime, value goja.Value) string {
-	if !IsPresent(vm, value) {
+	if !IsPresent(value) {
 		panic(vm.ToValue("String is null"))
 	}
 
@@ -89,7 +89,7 @@ func String(vm *goja.Runtime, value goja.Value) string {
 }
 
 func NumberInt64(vm *goja.Runtime, value goja.Value) int64 {
-	if !IsPresent(vm, value) {
+	if !IsPresent(value) {
 		panic(vm.ToValue("Must be a number"))
 	}
 
@@ -104,7 +104,7 @@ func NumberInt64(vm *goja.Runtime, value goja.Value) int64 {
 }
 
 func NumberInt(vm *goja.Runtime, value goja.Value) int32 {
-	if !IsPresent(vm, value) {
+	if !IsPresent(value) {
 		panic(vm.ToValue("Must be a number"))
 	}
 
@@ -118,11 +118,11 @@ func NumberInt(vm *goja.Runtime, value goja.Value) int32 {
 	panic(vm.ToValue("Number type unsupported"))
 }
 
-func IsPresent(vm *goja.Runtime, val goja.Value) bool {
+func IsPresent(val goja.Value) bool {
 	return val != nil && !goja.IsNull(val) && !goja.IsUndefined(val) && !goja.IsNaN(val)
 }
 
-func IsPresentInObject(vm *goja.Runtime, object *goja.Object, key string) bool {
+func IsPresentInObject(object *goja.Object, key string) bool {
 	val := object.Get(key)
 	return val != nil && !goja.IsNull(val) && !goja.IsUndefined(val) && !goja.IsNaN(val)
 }
